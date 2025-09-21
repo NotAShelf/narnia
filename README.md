@@ -2,8 +2,8 @@
 
 # narnia
 
-A terminal based tool built on ncurses for for looking up Nix store paths in
-binary caches and viewing their nar info metadata.
+Terminal utility built with ncurses for looking up Nix store paths in binary
+caches and viewing their NAR info metadata.
 
 ## Features
 
