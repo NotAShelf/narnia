@@ -7,7 +7,7 @@ caches and viewing their NAR info metadata.
 
 ## Features
 
-- Very small binary (< 30kb)
+- Very small binary (< 20kb)
 - Interactive TUI for browsing narinfo contents
 - Support for multiple binary caches
 - Direct executable lookup without prompts
@@ -48,10 +48,20 @@ but this feature may be removed in the future.
 - `libclipboard`
 
 Once you confirm that you have acquired the relevant dependencies, build with
-`gcc`.
+Zig.
 
 ```bash
-gcc -o nixnarinfo nixnarinfo.c -lcurl -lncurses -lclipboard
+zig build -Doptimize=ReleaseSmall
+```
+
+This will automatically optimize the binary for release, with a focus on smaller
+binary sizes. You may experiment with release modes if you'd like, e.g., a
+"faster" binary but the speed doesn't seem to change much.
+
+You can, of course, choose to build with `gcc` if that is what you prefer.
+
+```bash
+gcc -o narnia main.c -lcurl -lncurses -lclipboard
 ```
 
 ## Controls
