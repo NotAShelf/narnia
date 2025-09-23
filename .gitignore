@@ -1,2 +1,4 @@
 /.direnv/
 /narnia
+/zig-out/
+/.zig-cache/
