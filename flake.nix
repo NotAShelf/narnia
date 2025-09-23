@@ -1,26 +1,20 @@
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
   outputs = {nixpkgs, ...}: let
-    system = "x86_64-linux";
-    pkgs = nixpkgs.legacyPackages.${system};
+    systems = ["x86_64-linux" "aarch64-linux"];
+    forEachSystem = nixpkgs.lib.genAttrs systems;
+    pkgsForEach = nixpkgs.legacyPackages;
   in {
-    devShells.${system} = {
-      default = pkgs.mkShell {
-        packages = with pkgs; [
-          clang-tools
+    devShells = forEachSystem (system: let
+      pkgs = pkgsForEach.${system};
+    in {
+      default = pkgs.callPackage ./nix/shell.nix {};
+    });
 
-          gcc
-          pkg-config
-          ncurses
-          curl
-          xorg.xorgproto
-          xorg.libX11.dev
-          wayland.dev
-          libclipboard.dev
-        ];
-
-        env.CLANGD_FLAGS = "--query-driver=${pkgs.lib.getExe pkgs.stdenv.cc}";
-      };
-    };
+    packages = forEachSystem (system: let
+      pkgs = pkgsForEach.${system};
+    in {
+      default = pkgs.callPackage ./nix/package.nix {};
+    });
   };
 }
