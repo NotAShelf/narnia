@@ -1,6 +1,6 @@
+#include "include/clipboard.h"
 #include <curl/curl.h>
 #include <getopt.h>
-#include <libclipboard.h>
 #include <limits.h>
 #include <locale.h>
 #include <ncurses.h>
@@ -164,7 +164,10 @@ void show_centered_inputbox(const char *prompt, char *out, size_t outlen) {
   WINDOW *win;
   draw_centered_bordered_win(&win, height, width, maxy, maxx);
   mvwprintw(win, 1, (width - strlen(prompt)) / 2, "%s", prompt);
-  wmove(win, 3, (width - 24) / 2);
+
+  int input_width = width - 6;
+  int input_x = 3;
+  wmove(win, 3, input_x);
 
   echo();
   wgetnstr(win, out, outlen - 1);
@@ -179,10 +182,11 @@ void show_status_structured(StatusItem *items, int item_count) {
   int maxy, maxx;
   getmaxyx(stdscr, maxy, maxx);
 
-  char status_line[1024] = {0};
+  char status_line[1024];
   int pos = 0;
+  memset(status_line, 0, sizeof(status_line));
 
-  for (int i = 0; i < item_count && pos < sizeof(status_line) - 1; i++) {
+  for (int i = 0; i < item_count && pos < 800; i++) {
     if (i > 0) {
       pos += snprintf(status_line + pos, sizeof(status_line) - pos, "  ");
     }
@@ -190,10 +194,14 @@ void show_status_structured(StatusItem *items, int item_count) {
                     items[i].key, items[i].desc);
   }
 
+  char padded_line[1024];
+  snprintf(padded_line, sizeof(padded_line), "%-*s", maxx - 2, status_line);
+  padded_line[maxx - 2] = '\0';
+
+  move(maxy - 2, 1);
   attron(A_REVERSE);
-  mvprintw(maxy - 1, 0, "%-*s", maxx - 1, status_line);
+  addstr(padded_line);
   attroff(A_REVERSE);
-  refresh();
 }
 
 void show_status(const char *msg) {
@@ -207,7 +215,6 @@ void show_main_borders(void) {
   box(stdscr, 0, 0);
   mvhline(2, 1, 0, maxx - 2);
   mvhline(maxy - 3, 1, 0, maxx - 2);
-  refresh();
 }
 
 void free_narinfo(NarinfoResult *res) {
@@ -220,10 +227,9 @@ void free_narinfo(NarinfoResult *res) {
 }
 
 void clipboard_copy(const char *str) {
-  clipboard_c *cb = clipboard_new(NULL);
-  if (cb) {
-    clipboard_set_text(cb, str);
-    clipboard_free(cb);
+  if (clipboard_set_text(str) != 0) {
+    show_status("Failed to copy to clipboard");
+    napms(1000);
   }
 }
 
@@ -331,6 +337,8 @@ void show_narinfo_viewer(NarinfoResult results[], int loaded) {
                                  {"q", "quit"}};
     show_status_structured(status_items, 6);
 
+    refresh();
+
     int ch = getch();
     if (ch == '\t' || ch == KEY_RIGHT) {
       current = (current + 1) % loaded;
@@ -355,6 +363,7 @@ void show_narinfo_viewer(NarinfoResult results[], int loaded) {
     } else if (ch == '\n' || ch == KEY_ENTER) {
       clipboard_copy(res->narinfo_view[selected_line]);
       show_status("Copied to clipboard!");
+      refresh();
       napms(500);
     } else if (ch == 'q') {
       return;
@@ -446,6 +455,11 @@ int main(int argc, char *argv[]) {
   }
 
   setlocale(LC_ALL, "");
+
+  if (clipboard_init() != 0) {
+    fprintf(stderr, "Warning: Could not initialize clipboard functionality\n");
+  }
+
   initscr();
   cbreak();
   noecho();
@@ -456,6 +470,7 @@ int main(int argc, char *argv[]) {
 
   curl_global_cleanup();
   endwin();
+  clipboard_cleanup();
 
   for (int i = 0; i < cache_count; i++) {
     free(cache_urls[i]);
