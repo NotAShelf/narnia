@@ -2,11 +2,13 @@
   lib,
   stdenv,
   zig,
+  pkg-config,
   ncurses,
   curl,
+  withX11 ? true,
+  withWayland ? true,
   xorg,
   wayland,
-  libclipboard,
 }: let
   fs = lib.fileset;
   s = ../.;
@@ -19,18 +21,21 @@ in
       fileset = fs.unions [
         (s + /main.c)
         (s + /build.zig)
+        (s + /include)
       ];
     };
 
-    nativeBuildInputs = [zig.hook];
-    buildInputs = [
-      ncurses
-      curl
-      xorg.xorgproto
-      xorg.libX11.dev
-      wayland.dev
-      libclipboard.dev
-    ];
+    nativeBuildInputs = [zig.hook pkg-config];
+    buildInputs =
+      [
+        ncurses
+        curl
+      ]
+      ++ lib.optionals withX11 [
+        xorg.xorgproto
+        xorg.libX11.dev
+      ]
+      ++ lib.optionals withWayland [wayland.dev];
 
     zigBuildFlags = ["-Doptimize=ReleaseSmall"];
 
