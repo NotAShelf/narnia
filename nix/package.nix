@@ -7,7 +7,8 @@
   curl,
   withX11 ? true,
   withWayland ? true,
-  xorg,
+  xorgproto,
+  libx11,
   wayland,
 }: let
   fs = lib.fileset;
@@ -15,7 +16,7 @@
 in
   stdenv.mkDerivation {
     pname = "narnia";
-    version = "0-unstable-2025-09-23";
+    version = "0-unstable-2026-02-11";
     src = fs.toSource {
       root = s;
       fileset = fs.unions [
@@ -32,8 +33,8 @@ in
         curl
       ]
       ++ lib.optionals withX11 [
-        xorg.xorgproto
-        xorg.libX11.dev
+        xorgproto
+        libx11.dev
       ]
       ++ lib.optionals withWayland [wayland.dev];
 
